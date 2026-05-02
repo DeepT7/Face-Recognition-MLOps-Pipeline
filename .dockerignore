@@ -1,0 +1,21 @@
+# Ignore python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore data and heavy model weights
+data/
+checkpoints/
+model_repository/
+archive.zip
+
+# Ignore local env and git
+.env
+.git
+.gitignore
+
+# Ignore IDE settings and notebooks
+.vscode/
+.idea/
+notebooks/
+scripts/

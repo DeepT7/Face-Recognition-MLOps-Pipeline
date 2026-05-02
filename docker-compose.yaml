@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # Service 1: The Triton Inference Server
+  triton:
+    image: nvcr.io/nvidia/tritonserver:24.03-py3
+    container_name: tritonserver
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./model_repository:/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: ["tritonserver", "--model-repository=/models", "--allow-grpc=true"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    
+  # Service 2: The Gateway (FastAPI)
+  api: 
+    build: . 
+    container_name: fastapi_gateway 
+    # Ensure the API can communicate with the Triton server
+    depends_on:
+      triton:
+        condition: service_healthy  
+    volumes:
+      - ./checkpoints:/workspace/checkpoints
+    env_file:
+      - .env
+    environment:
+      - TRITON_SERVER_URL=triton:8001 # Use the service name 'triton' to refer to the Triton server 
+    ports:
+      - "8080:8080"
+    command: ["sh", "-c", "pwd && ls -la && uvicorn app.main:app --host 0.0.0.0 --port 8080"]
+    # command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    

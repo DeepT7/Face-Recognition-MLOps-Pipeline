@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Matching Gateway</title>
+    <link rel="stylesheet" href="static/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-face-smile"></i>
+                <span>Face Gateway</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#register" class="nav-link">Register</a>
+                <a href="#verify" class="nav-link">Verify</a>
+                <a href="#manage" class="nav-link">Manage</a>
+            </div>
+            <div class="nav-auth">
+                <button id="authBtn" class="btn btn-outline">
+                    <i class="fas fa-key"></i>
+                    Authenticate
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-shield-alt"></i> API Authentication</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="auth-form">
+                    <div class="form-group">
+                        <label for="apiKey">Admin API Key</label>
+                        <input type="password" id="apiKey" placeholder="Enter your admin API key">
+                        <small>Use the single admin key configured in your .env file.</small>
+                    </div>
+                    <div id="authStatus" class="auth-status"></div>
+                    <button id="authenticateBtn" class="btn btn-primary full-width">
+                        <i class="fas fa-check"></i> Authenticate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1>Welcome to Face Matching Gateway</h1>
+                    <p class="hero-subtitle">Advanced face recognition and verification system powered by AI</p>
+                    <div class="hero-features">
+                        <div class="feature">
+                            <i class="fas fa-user-plus"></i>
+                            <h3>Register Faces</h3>
+                            <p>Add new faces to the recognition database</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-search"></i>
+                            <h3>Verify Identity</h3>
+                            <p>Verify faces against registered users</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-users-cog"></i>
+                            <h3>Manage Users</h3>
+                            <p>View and manage registered users</p>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" onclick="scrollToSection('register')">
+                            <i class="fas fa-plus"></i> Get Started
+                        </button>
+                        <button class="btn btn-outline" onclick="scrollToSection('verify')">
+                            <i class="fas fa-search"></i> Try Verification
+                        </button>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="face-illustration">
+                        <i class="fas fa-face-smile"></i>
+                        <div class="face-dots">
+                            <div class="dot dot-1"></div>
+                            <div class="dot dot-2"></div>
+                            <div class="dot dot-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Register Section -->
+        <section id="register" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-plus"></i> Register New Face</h2>
+                    <p>Add a new person to the face recognition database</p>
+                </div>
+                <div class="register-form">
+                    <div class="form-card">
+                        <form id="registerForm">
+                            <div class="form-group">
+                                <label for="personName">
+                                    <i class="fas fa-user"></i> Person Name
+                                </label>
+                                <input type="text" id="personName" placeholder="Enter full name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="personImage">
+                                    <i class="fas fa-camera"></i> Face Image
+                                </label>
+                                <div class="file-upload">
+                                    <input type="file" id="personImage" accept="image/*" required>
+                                    <div class="file-upload-area">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>Click to upload or drag and drop</p>
+                                        <span>JPG, PNG, JPEG up to 10MB</span>
+                                    </div>
+                                </div>
+                                <div id="imagePreview" class="image-preview"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary full-width" id="registerBtn">
+                                <i class="fas fa-plus"></i> Register Face
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Verify Section -->
+        <section id="verify" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-search"></i> Verify Face</h2>
+                    <p>Verify a face against registered users in the database</p>
+                </div>
+                <div class="verify-form">
+                    <div class="form-card">
+                        <form id="verifyForm">
+                            <div class="form-group">
+                                <label for="verifyImage">
+                                    <i class="fas fa-camera"></i> Face Image to Verify
+                                </label>
+                                <div class="file-upload">
+                                    <input type="file" id="verifyImage" accept="image/*" required>
+                                    <div class="file-upload-area">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>Click to upload or drag and drop</p>
+                                        <span>JPG, PNG, JPEG up to 10MB</span>
+                                    </div>
+                                </div>
+                                <div id="verifyImagePreview" class="image-preview"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="personId">
+                                    <i class="fas fa-id-card"></i> Person ID
+                                </label>
+                                <input type="text" id="personId" placeholder="Leave empty to search all users">
+                                <small>If specified, will verify against this specific person only</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary full-width" id="verifyBtn">
+                                <i class="fas fa-search"></i> Verify Face
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Manage Section -->
+        <section id="manage" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2><i class="fas fa-users-cog"></i> Manage Users</h2>
+                    <p>View and manage registered users in the database</p>
+                </div>
+                <div class="manage-content">
+                    <div class="manage-actions">
+                        <div class="search-container">
+                            <input type="text" id="userSearch" placeholder="Search by name or ID..." class="search-input">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                        <div class="page-controls">
+                            <div class="page-size-selector">
+                                <label for="pageSize">Show:</label>
+                                <select id="pageSize" class="page-size-select">
+                                    <option value="50">50</option>
+                                    <option value="100" selected>100</option>
+                                </select>
+                                <span>per page</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="refreshUsersBtn">
+                            <i class="fas fa-sync"></i> Refresh Users
+                        </button>
+                    </div>
+                    <div id="usersList" class="users-grid">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Loading users...</p>
+                        </div>
+                    </div>
+                    <div class="pagination-controls" id="paginationControls" style="display: none;">
+                        <div class="pagination-info">
+                            <span id="paginationInfo">Showing 1-50 of 1680 users</span>
+                        </div>
+                        <div class="pagination-buttons">
+                            <button class="btn btn-outline btn-small" id="prevPage" disabled>
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <span class="page-indicator">
+                                Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+                            </span>
+                            <button class="btn btn-outline btn-small" id="nextPage">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Response Modal -->
+    <div id="responseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="responseTitle">Response</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="responseContent" class="response-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="static/js/app.js"></script>
+</body>
+</html>
