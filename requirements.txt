@@ -8,6 +8,7 @@ pillow==11.3.0
 opencv-python==4.9.0.80
 gunicorn==23.0.0
 python-multipart==0.0.20
+python-dotenv==1.0.1
 onnxruntime==1.19.2
 supabase==2.29.0
 tritonclient[http]
