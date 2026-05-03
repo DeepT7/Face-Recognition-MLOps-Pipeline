@@ -16,6 +16,7 @@ The system is designed for AI engineers and MLOps practitioners who need a deplo
 - **FastAPI microservice architecture**: Lightweight, async-first API endpoints with clean separation of concerns.
 - **Front-end usability**: A polished single-page interface for registration, verification, and user management.
 - **Operational visibility**: Health endpoints and logging for easier debugging and deployment.
+- **CI validation**: GitHub Actions runs automated tests and Docker image builds before changes are merged or released.
 
 ## Architecture and Workflow
 
@@ -54,21 +55,32 @@ The system is designed for AI engineers and MLOps practitioners who need a deplo
 - Search and delete features support lifecycle management of registered identities.
 - Logging and health checks provide entry points for monitoring and alerting.
 
+### 6. Continuous Integration
+
+- GitHub Actions runs the CI pipeline defined in `.github/workflows/deploy.yml`.
+- The pipeline runs on pushes and pull requests targeting `main`.
+- CI installs lightweight test dependencies from `requirements-dev.txt`, runs `pytest`, and builds the API Docker image.
+- Live Supabase integration tests are skipped by default so CI does not depend on external credentials or network state.
+- To run the Supabase integration test intentionally, set `RUN_SUPABASE_TESTS=1` with valid `SUPABASE_URL` and `SUPABASE_KEY`.
+
 ## Project Structure
 
 - `app/`
-  - `main.py` — API service and inference endpoints.
-  - `utils.py` — helper functions for embeddings, gallery loading, and Supabase integration.
-  - `core/config.py` — central path and server configuration.
+  - `main.py` - API service and inference endpoints.
+  - `utils.py` - helper functions for embeddings, gallery loading, and Supabase integration.
+  - `core/config.py` - central path and server configuration.
 - `static/`
-  - `index.html` — web UI.
-  - `css/style.css` — responsive design and dashboard styling.
-  - `js/app.js` — authentication, API integration, pagination, and user workflows.
-- `checkpoints/` — ONNX model and checkpoints used for face embedding extraction.
-- `data/` — gallery/probe image storage and system database.
-- `model_repository/` — model deployment resources.
-- `start_website.py` — launcher that reads config and starts the API service.
-- `requirements.txt` — pinned dependency list for reproducible environments.
+  - `index.html` - web UI.
+  - `css/style.css` - responsive design and dashboard styling.
+  - `js/app.js` - authentication, API integration, pagination, and user workflows.
+- `.github/workflows/deploy.yml` - CI pipeline for tests and Docker image builds.
+- `tests/` - automated smoke and integration tests.
+- `checkpoints/` - ONNX model and checkpoints used for face embedding extraction.
+- `data/` - gallery/probe image storage and system database.
+- `model_repository/` - model deployment resources.
+- `start_website.py` - launcher that reads config and starts the API service.
+- `requirements.txt` - pinned runtime dependency list.
+- `requirements-dev.txt` - lightweight test dependency list for CI.
 
 ## Technology Stack
 
@@ -143,12 +155,43 @@ http://127.0.0.1:8000/web
 
 Enter the `ADMIN_API_KEY` in the API Authentication modal.
 
+## Continuous Integration
+
+The repository includes a GitHub Actions workflow for basic CI quality gates:
+
+```text
+push or pull request to main
+-> install test dependencies
+-> run pytest
+-> build Docker image
+```
+
+The current workflow is intentionally focused on fast, reliable checks:
+
+- `tests/test_project_smoke.py` verifies required deployment files and Docker Compose service wiring.
+- `tests/test_user_loading.py` verifies Supabase pagination only when `RUN_SUPABASE_TESTS=1` is set.
+- The Docker build job confirms the API image can be built from the committed `Dockerfile`.
+
+Run the same test command locally:
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+Run the optional live Supabase integration test:
+
+```bash
+RUN_SUPABASE_TESTS=1 pytest tests/test_user_loading.py -q
+```
+
 ## Interview Highlights
 
 - Supports a full inference pipeline from image upload to embedding matching
 - Demonstrates secure API key gating for management operations
 - Uses Supabase for managed storage and data persistence
 - Designed for MLOps with startup model loading, logging, health checks, and environment configuration
+- Includes CI checks for tests and Docker image build validation
 - Frontend-backed UX with pagination and search for large user sets
 - Easy to extend for GPU acceleration, containerization, or CI/CD deployment
 
@@ -157,4 +200,5 @@ Enter the `ADMIN_API_KEY` in the API Authentication modal.
 - Keep `.env` secret and out of source control.
 - Use a strong `ADMIN_API_KEY` for production.
 - The Triton service and API gateway can be deployed together with Docker Compose.
+- CI does not deploy the application yet; it validates tests and image build health.
 - Restart the server after changing `APP_HOST` / `APP_PORT`.
