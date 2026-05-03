@@ -67,6 +67,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 app.mount("/static", StaticFiles(directory=os.path.join(base_dir, "static")), name="static")
 # Initialize Triton client (if needed for future GPU inference)
 triton_client = None
+TRITON_MODEL_NAME = "face_matching_model"
 try:
     triton_grpc_url = os.getenv("TRITON_SERVER_URL", "localhost:8001")
     triton_client = grpcclient.InferenceServerClient(url=triton_grpc_url, verbose=False)
@@ -123,7 +124,7 @@ async def verify(file: UploadFile = File(...), person_id: str = Query(..., descr
     logger.debug(f"Debug: Verifying person_id: {person_id}, in gallery: {person_id in gallery_data}")
     image_bytes = await file.read()
     # probe_embedding = extract_embedding(image_bytes)
-    probe_embedding = extract_embedding_from_triton(image_bytes, triton_client=triton_client, model_name="face_matching_model")
+    probe_embedding = extract_embedding_from_triton(image_bytes, triton_client=triton_client, model_name=TRITON_MODEL_NAME)
 
     if probe_embedding is None:
         raise HTTPException(status_code=400, detail="Could not detect a face in the uploaded image")
@@ -145,7 +146,7 @@ async def verify(file: UploadFile = File(...), person_id: str = Query(..., descr
         }
 
 @app.get("/users")
-async def get_all_users():
+async def get_all_users(client_type: str = Depends(verify_api_key)):
     """
     Retrieves all users from the gallery.
     """
@@ -185,7 +186,7 @@ async def register(person_name: str = Query(..., description="Name of the new pe
     logger.info(f"Registration request from {client_type}")
     image_bytes = await file.read()
     # new_embedding = extract_embedding(image_bytes)
-    new_embedding = extract_embedding_from_triton(image_bytes, triton_client=triton_client, model_name="face_matching_model")
+    new_embedding = extract_embedding_from_triton(image_bytes, triton_client=triton_client, model_name=TRITON_MODEL_NAME)
     if new_embedding is None:
         raise HTTPException(status_code=400, detail="Could not detect a face in the uploaded image. Registration failed.")
 
@@ -323,4 +324,46 @@ async def debug_gallery():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    triton_health = {
+        "configured_url": triton_grpc_url,
+        "client_initialized": triton_client is not None,
+        "server_ready": False,
+        "model_name": TRITON_MODEL_NAME,
+        "model_ready": False,
+        "error": None,
+    }
+
+    if triton_client is not None:
+        try:
+            triton_health["server_ready"] = bool(triton_client.is_server_ready())
+            triton_health["model_ready"] = bool(triton_client.is_model_ready(TRITON_MODEL_NAME))
+        except Exception as e:
+            triton_health["error"] = str(e)
+    else:
+        triton_health["error"] = "Triton client is not initialized"
+
+    with gallery_lock:
+        embedding_shape = list(gallery_embeddings.shape) if hasattr(gallery_embeddings, "shape") else []
+        gallery_count = len(gallery_ids)
+        embedding_count = int(gallery_embeddings.shape[0]) if gallery_embeddings.ndim > 0 else 0
+        gallery_health = {
+            "count": gallery_count,
+            "data_count": len(gallery_data),
+            "embedding_count": embedding_count,
+            "embedding_shape": embedding_shape,
+            "loaded": gallery_count > 0,
+            "consistent": len(gallery_data) == gallery_count == embedding_count,
+        }
+
+    is_healthy = (
+        triton_health["server_ready"]
+        and triton_health["model_ready"]
+        and gallery_health["consistent"]
+    )
+
+    return {
+        "status": "healthy" if is_healthy else "degraded",
+        "api": "healthy",
+        "triton": triton_health,
+        "gallery": gallery_health,
+    }
